@@ -10,9 +10,11 @@ import (
 
 const (
 	// DefaultTimeout for network exchange
-	DefaultTimeout = 60 * time.Second
+	DefaultTimeout = 30 * time.Second
 	// DefaultMaxIdleConns to keep
 	DefaultMaxIdleConns = 15
+	// defaultKeepAliveTimeout
+	defaultKeepAliveTimeout = 90 * time.Second
 )
 
 // Client is our http client that can be used to make http requests efficiently
@@ -31,6 +33,7 @@ type Client struct {
 	transport        *http.Transport
 	dialTimeout      time.Duration
 	keepAliveTimeout time.Duration
+	idleConnTimeout  time.Duration
 }
 
 // Close forces client to close any idle connections and cleanup
@@ -84,8 +87,20 @@ func DialTimeout(t time.Duration) func(*Client) error {
 	}
 }
 
+// IdleConnTimeout is configuration option to pass to Client
+// it changes the timeout for request exchange
+// period after which we'll remove the idle connection
+// from the pool
+func IdleConnTimeout(t time.Duration) func(*Client) error {
+	return func(c *Client) error {
+		c.idleConnTimeout = t
+		return nil
+	}
+}
+
 // KeepAliveTimeout is configuration option to pass to Client
 // it changes the timeout for how long the tcp connection stays open
+// After which period will tcp keep alive happen on the TCP connection
 func KeepAliveTimeout(t time.Duration) func(*Client) error {
 	return func(c *Client) error {
 		c.keepAliveTimeout = t
@@ -114,7 +129,7 @@ func Logger(w io.Writer) func(*Client) error {
 func (c *Client) setDefaults() {
 	c.headers = make(http.Header)
 	c.dialTimeout = DefaultTimeout
-	c.keepAliveTimeout = DefaultTimeout
+	c.keepAliveTimeout = defaultKeepAliveTimeout
 	c.maxIdleConns = DefaultMaxIdleConns
 	c.redirectFunc = defaultRedirectPolicy
 	c.log = log.New(
@@ -128,17 +143,22 @@ func (c *Client) setUp() error {
 	if c.logWriter != nil {
 		c.log.SetOutput(c.logWriter)
 	}
-	//create transport and client
+	// create transport and client
+	// re MaxIdleConns it's ok to keep it the same as MaxIdleCons
+	// because presumably we always connect to one host
 	tr := &http.Transport{
-		MaxIdleConns:       c.maxIdleConns,
-		DisableCompression: false,
-		DialContext:        c.dialContext,
+		MaxIdleConns:          c.maxIdleConns,
+		MaxIdleConnsPerHost:   c.maxIdleConns,
+		DisableCompression:    false,
+		DialContext:           c.dialContext,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		IdleConnTimeout:       c.idleConnTimeout,
 	}
 	c.transport = tr
 	c.log.Printf("Initialized transport: %#v\n", tr)
 	client := &http.Client{
 		Transport: tr,
-		Timeout:   c.keepAliveTimeout,
 	}
 	//set redirect func
 	if c.redirectFunc != nil {

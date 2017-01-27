@@ -16,8 +16,8 @@ func TestGet(t *testing.T) {
 	headers.Add("X-Test", "TestGet")
 	c, err := New(
 		Headers(headers),
-		DialTimeout(2*time.Second),
-		KeepAliveTimeout(10*time.Second),
+		DialTimeout(4*time.Second),
+		IdleConnTimeout(10*time.Second),
 		MaxIdleConns(4),
 		Logger(os.Stderr),
 		RedirectPolicy(defaultRedirectPolicy),
@@ -77,7 +77,7 @@ func TestGet(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 	c.Close()
 }
 
@@ -96,8 +96,8 @@ func codeTest(wg *sync.WaitGroup, t *testing.T, code int) ResponseHandler {
 
 func TestGetH2(t *testing.T) {
 	c, err := New(
-		KeepAliveTimeout(10*time.Second),
-		DialTimeout(2*time.Second),
+		IdleConnTimeout(10*time.Second),
+		DialTimeout(3*time.Second),
 		MaxIdleConns(4),
 		Logger(os.Stderr),
 	)
@@ -127,6 +127,6 @@ func TestGetH2(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 	c.Close()
 }

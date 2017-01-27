@@ -13,11 +13,12 @@ func TestClient(t *testing.T) {
 	headers.Add("X-Test", "TestClient")
 	_, err := New(
 		Headers(headers),
-		KeepAliveTimeout(7*time.Second),
-		DialTimeout(1*time.Second),
+		KeepAliveTimeout(60*time.Second),
+		DialTimeout(3*time.Second),
 		MaxIdleConns(2),
 		Logger(ioutil.Discard),
 		RedirectPolicy(defaultRedirectPolicy),
+		IdleConnTimeout(30*time.Second),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)

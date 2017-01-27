@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"log"
@@ -9,13 +10,20 @@ import (
 )
 
 const (
-	// DefaultTimeout for network exchange
-	DefaultTimeout = 30 * time.Second
-	// DefaultMaxIdleConns to keep
+	// DefaultDialTimeout for TCP dial
+	DefaultDialTimeout = 10 * time.Second
+	// DefaultTLSHandshakeTimeout for TLS handshake
+	DefaultTLSHandshakeTimeout = 10 * time.Second
+	// DefaultResponseHeaderTimeout  for waiting to read a response header
+	DefaultResponseHeaderTimeout = 30 * time.Second
+	// DefaultMaxIdleConns to keep in pool
 	DefaultMaxIdleConns = 15
-	// defaultKeepAliveTimeout
-	defaultKeepAliveTimeout = 90 * time.Second
+	// DefaultKeepAliveTimeout - when socket keep alive check will be performed
+	DefaultKeepAliveTimeout = 90 * time.Second
 )
+
+//ErrInvalidValue signifies that an invaild value was given to configartion option
+var ErrInvalidValue = errors.New("invalid value for option")
 
 // Client is our http client that can be used to make http requests efficiently
 // for now we intend to support Get
@@ -23,26 +31,30 @@ const (
 // timeouts and watch the resource use
 // safe (and intended) to use from several go routines
 type Client struct {
-	headers          http.Header
-	redirectFunc     func(*http.Request, []*http.Request) error
-	client           *http.Client
-	maxIdleConns     int
-	logWriter        io.Writer
-	log              *log.Logger
-	currentConnID    int64
-	transport        *http.Transport
-	dialTimeout      time.Duration
-	keepAliveTimeout time.Duration
-	idleConnTimeout  time.Duration
+	headers               http.Header
+	redirectFunc          func(*http.Request, []*http.Request) error
+	client                *http.Client
+	maxIdleConns          int
+	maxIdleConnsPerHost   int
+	logWriter             io.Writer
+	log                   *log.Logger
+	currentConnID         int64
+	transport             *http.Transport
+	dialTimeout           time.Duration
+	keepAliveTimeout      time.Duration
+	idleConnTimeout       time.Duration
+	tlsHandshakeTimeout   time.Duration
+	responseHeaderTimeout time.Duration
 }
 
-// Close forces client to close any idle connections and cleanup
+// Close is cleanup function that makes client
+// close any idle connections
 func (c *Client) Close() {
 	c.log.Printf("Close client  %#v with all idle connections", c)
 	c.transport.CloseIdleConnections()
 }
 
-// New configures and returns new instance of Client
+// New configures and returns a new instance of http.Client
 func New(options ...func(*Client) error) (*Client, error) {
 	c := new(Client)
 	c.setDefaults()
@@ -60,6 +72,8 @@ func New(options ...func(*Client) error) (*Client, error) {
 
 // Headers is configuration option to pass headers to Client
 // it makes GET requests use the provided headers
+// use this for headers shared among all requests
+// for request specific headers use the ExtraHeaders RequestOption
 func Headers(headers http.Header) func(*Client) error {
 	return func(c *Client) error {
 		for k, v := range headers {
@@ -71,6 +85,8 @@ func Headers(headers http.Header) func(*Client) error {
 
 // RedirectPolicy is configuration option to pass to Client
 // it changes what client does on redirects
+// the default behaviour is to copy the headers from original
+// request and try again up to 10 times
 func RedirectPolicy(redirectFunc func(req *http.Request, via []*http.Request) error) func(*Client) error {
 	return func(c *Client) error {
 		c.redirectFunc = redirectFunc
@@ -79,7 +95,8 @@ func RedirectPolicy(redirectFunc func(req *http.Request, via []*http.Request) er
 }
 
 // DialTimeout is configuration option to pass to Client
-// it changes the timeout for request exchange
+// it changes how long will the client wait to establish
+// the TCP connection
 func DialTimeout(t time.Duration) func(*Client) error {
 	return func(c *Client) error {
 		c.dialTimeout = t
@@ -87,10 +104,10 @@ func DialTimeout(t time.Duration) func(*Client) error {
 	}
 }
 
-// IdleConnTimeout is configuration option to pass to Client
-// it changes the timeout for request exchange
-// period after which we'll remove the idle connection
-// from the pool
+// IdleConnTimeout is a configuration option to pass to Client
+// it sets how long will idle connections live in a pool
+// waiting to be used again.
+// Once the timeout is reached connections are closed and removed from pool.
 func IdleConnTimeout(t time.Duration) func(*Client) error {
 	return func(c *Client) error {
 		c.idleConnTimeout = t
@@ -101,6 +118,9 @@ func IdleConnTimeout(t time.Duration) func(*Client) error {
 // KeepAliveTimeout is configuration option to pass to Client
 // it changes the timeout for how long the tcp connection stays open
 // After which period will tcp keep alive happen on the TCP connection
+// safe to leave the default but can be tweaked should one notice
+// connections being reset by peers sooner than expected
+// Note: OS may override this value
 func KeepAliveTimeout(t time.Duration) func(*Client) error {
 	return func(c *Client) error {
 		c.keepAliveTimeout = t
@@ -108,17 +128,54 @@ func KeepAliveTimeout(t time.Duration) func(*Client) error {
 	}
 }
 
+// TLSHandshakeTimeout is a configuration option to pass to Client
+// it limits the time spent performing the TLS handshake.
+func TLSHandshakeTimeout(t time.Duration) func(*Client) error {
+	return func(c *Client) error {
+		c.tlsHandshakeTimeout = t
+		return nil
+	}
+}
+
+// ResponseHeaderTimeout is a configuration option to pass to Client
+// it limits the time spent reading the headers of the response.
+func ResponseHeaderTimeout(t time.Duration) func(*Client) error {
+	return func(c *Client) error {
+		c.responseHeaderTimeout = t
+		return nil
+	}
+}
+
 // MaxIdleConns is configuration option to pass to Client
-// it changes the maximum idle connections that the client will keep around
+// it changes the maximum idle connections that the client will keep
+// in a pool
 func MaxIdleConns(n int) func(*Client) error {
 	return func(c *Client) error {
+		if n < 0 {
+			return ErrInvalidValue
+		}
 		c.maxIdleConns = n
 		return nil
 	}
 }
 
+// MaxIdleConnsPerHost is configuration option to pass to Client
+// it changes the maximum idle connections that the client will keep in a pool
+// for a single host.
+// If not specified this will be the same as MaxIdleConns.
+func MaxIdleConnsPerHost(n int) func(*Client) error {
+	return func(c *Client) error {
+		if n < 0 {
+			return ErrInvalidValue
+		}
+		c.maxIdleConnsPerHost = n
+		return nil
+	}
+}
+
 // Logger is configuration option to pass to Client
-// it changes where the debug info is written stderr by default
+// it changes where the debug info is written
+// (ioutil.Discard by default)
 func Logger(w io.Writer) func(*Client) error {
 	return func(c *Client) error {
 		c.logWriter = w
@@ -128,9 +185,12 @@ func Logger(w io.Writer) func(*Client) error {
 
 func (c *Client) setDefaults() {
 	c.headers = make(http.Header)
-	c.dialTimeout = DefaultTimeout
-	c.keepAliveTimeout = defaultKeepAliveTimeout
+	c.dialTimeout = DefaultDialTimeout
+	c.keepAliveTimeout = DefaultKeepAliveTimeout
+	c.tlsHandshakeTimeout = DefaultTLSHandshakeTimeout
+	c.responseHeaderTimeout = DefaultResponseHeaderTimeout
 	c.maxIdleConns = DefaultMaxIdleConns
+	c.maxIdleConnsPerHost = -1 //-1 means unset
 	c.redirectFunc = defaultRedirectPolicy
 	c.log = log.New(
 		ioutil.Discard,
@@ -143,16 +203,18 @@ func (c *Client) setUp() error {
 	if c.logWriter != nil {
 		c.log.SetOutput(c.logWriter)
 	}
+	// if per host is unset set it to same as maxIdleConns
+	if c.maxIdleConnsPerHost < 0 {
+		c.maxIdleConnsPerHost = c.maxIdleConns
+	}
 	// create transport and client
-	// re MaxIdleConns it's ok to keep it the same as MaxIdleCons
-	// because presumably we always connect to one host
 	tr := &http.Transport{
 		MaxIdleConns:          c.maxIdleConns,
-		MaxIdleConnsPerHost:   c.maxIdleConns,
+		MaxIdleConnsPerHost:   c.maxIdleConnsPerHost,
 		DisableCompression:    false,
 		DialContext:           c.dialContext,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
+		TLSHandshakeTimeout:   c.tlsHandshakeTimeout,
+		ResponseHeaderTimeout: c.responseHeaderTimeout,
 		IdleConnTimeout:       c.idleConnTimeout,
 	}
 	c.transport = tr

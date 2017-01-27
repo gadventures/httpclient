@@ -15,20 +15,37 @@ func TestClient(t *testing.T) {
 		Headers(headers),
 		KeepAliveTimeout(60*time.Second),
 		DialTimeout(3*time.Second),
-		MaxIdleConns(2),
+		MaxIdleConns(4),
+		MaxIdleConnsPerHost(2),
 		Logger(ioutil.Discard),
 		RedirectPolicy(defaultRedirectPolicy),
 		IdleConnTimeout(30*time.Second),
+		TLSHandshakeTimeout(10*time.Second),
+		ResponseHeaderTimeout(20*time.Second),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)
 	}
 
-	_, err = New(func(c *Client) error {
-		return errors.New("badd")
-	})
-	if err == nil {
-		t.Error("expected error on bad option")
+	var tests = []struct {
+		opt    func(c *Client) error
+		errstr string
+	}{
+		{badConfigOption(), "badd"},
+		{MaxIdleConns(-1), ErrInvalidValue.Error()},
+		{MaxIdleConnsPerHost(-2), ErrInvalidValue.Error()},
+	}
+	for _, test := range tests {
+		_, err := New(test.opt)
+		if err.Error() != test.errstr {
+			t.Errorf("expected %s but got %s", test.errstr, err.Error())
+		}
 	}
 
+}
+
+func badConfigOption() func(c *Client) error {
+	return func(c *Client) error {
+		return errors.New("badd")
+	}
 }

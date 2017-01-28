@@ -37,7 +37,9 @@ func TestGet(t *testing.T) {
 
 	extra := make(http.Header)
 	extra.Add("X-Extra", "true")
-	err = c.Get(ctx, rh, "https://httpbin.org/get", ExtraHeaders(extra))
+	delheaders := make(http.Header)
+	delheaders.Add("X-Test", "")
+	err = c.Get(ctx, rh, "https://httpbin.org/get", AddHeaders(extra), DelHeaders(delheaders))
 	if err != nil {
 		t.Errorf("trouble when making GET request: %v", err)
 	}
@@ -100,6 +102,7 @@ func TestGetH2(t *testing.T) {
 		DialTimeout(3*time.Second),
 		MaxIdleConns(4),
 		Logger(os.Stderr),
+		LogPrefix("h2client "),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)

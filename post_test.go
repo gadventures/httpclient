@@ -39,7 +39,7 @@ func TestPost(t *testing.T) {
 	buf := bytes.NewBufferString(`{"foo": "bar"}`)
 	extra := make(http.Header)
 	extra.Add("X-Extra", "true")
-	err = c.Post(ctx, rh, "https://httpbin.org/post", buf, ExtraHeaders(extra))
+	err = c.Post(ctx, rh, "https://httpbin.org/post", buf, SetHeaders(extra))
 	if err != nil {
 		t.Errorf("trouble when making POST request: %v", err)
 	}

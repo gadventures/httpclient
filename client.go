@@ -20,6 +20,7 @@ const (
 	DefaultMaxIdleConns = 15
 	// DefaultKeepAliveTimeout - when socket keep alive check will be performed
 	DefaultKeepAliveTimeout = 90 * time.Second
+	defaultLogPrefix        = "httpclient "
 )
 
 //ErrInvalidValue signifies that an invaild value was given to configartion option
@@ -45,6 +46,7 @@ type Client struct {
 	idleConnTimeout       time.Duration
 	tlsHandshakeTimeout   time.Duration
 	responseHeaderTimeout time.Duration
+	logPrefix             string
 }
 
 // Close is cleanup function that makes client
@@ -183,6 +185,16 @@ func Logger(w io.Writer) func(*Client) error {
 	}
 }
 
+// LogPrefix is configuration option to pass to Client
+// to change the prefix used in Clients log output.
+// This can be useful when one is using several httpclients.
+func LogPrefix(p string) func(*Client) error {
+	return func(c *Client) error {
+		c.logPrefix = p
+		return nil
+	}
+}
+
 func (c *Client) setDefaults() {
 	c.headers = make(http.Header)
 	c.dialTimeout = DefaultDialTimeout
@@ -192,9 +204,10 @@ func (c *Client) setDefaults() {
 	c.maxIdleConns = DefaultMaxIdleConns
 	c.maxIdleConnsPerHost = -1 //-1 means unset
 	c.redirectFunc = defaultRedirectPolicy
+	c.logPrefix = defaultLogPrefix
 	c.log = log.New(
 		ioutil.Discard,
-		"httpclient ",
+		c.logPrefix,
 		log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile|log.LUTC)
 }
 
@@ -202,6 +215,9 @@ func (c *Client) setUp() error {
 	//logger
 	if c.logWriter != nil {
 		c.log.SetOutput(c.logWriter)
+	}
+	if c.logPrefix != defaultLogPrefix {
+		c.log.SetPrefix(c.logPrefix)
 	}
 	// if per host is unset set it to same as maxIdleConns
 	if c.maxIdleConnsPerHost < 0 {

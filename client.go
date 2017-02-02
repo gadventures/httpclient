@@ -47,6 +47,7 @@ type Client struct {
 	tlsHandshakeTimeout   time.Duration
 	responseHeaderTimeout time.Duration
 	logPrefix             string
+	customRoundTripper    http.RoundTripper
 }
 
 // Close is cleanup function that makes client
@@ -195,6 +196,21 @@ func LogPrefix(p string) func(*Client) error {
 	}
 }
 
+// WithRoundTripper is configuration option to pass to Client
+// this will change the http.RoundTripper that the client will use
+// note use of this renders the use of httpclient pointless
+// since if you are managing your own transports
+// you might as well use net/http directly
+// however this option is useful for unittests
+// e.g. when using httpmock to verify expected traffic
+// when testing some code that uses httpclient
+func WithRoundTripper(t http.RoundTripper) func(*Client) error {
+	return func(c *Client) error {
+		c.customRoundTripper = t
+		return nil
+	}
+}
+
 func (c *Client) setDefaults() {
 	c.headers = make(http.Header)
 	c.dialTimeout = DefaultDialTimeout
@@ -234,9 +250,12 @@ func (c *Client) setUp() error {
 		IdleConnTimeout:       c.idleConnTimeout,
 	}
 	c.transport = tr
+	if c.customRoundTripper == nil {
+		c.customRoundTripper = tr
+	}
 	c.log.Printf("Initialized transport: %#v\n", tr)
 	client := &http.Client{
-		Transport: tr,
+		Transport: c.customRoundTripper,
 	}
 	//set redirect func
 	if c.redirectFunc != nil {

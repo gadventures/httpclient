@@ -3,9 +3,11 @@ package httpclient
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -110,6 +112,9 @@ func TestGetH2(t *testing.T) {
 	ctx := context.Background()
 
 	rh := func(ctx context.Context, resp *http.Response, err error) error {
+		if !strings.Contains(resp.Proto, "HTTP/2") {
+			return fmt.Errorf("Unexpected protocol %s wanted HTTP/2.0", resp.Proto)
+		}
 		if err != nil {
 			return err
 		}

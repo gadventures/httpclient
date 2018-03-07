@@ -265,3 +265,9 @@ func (c *Client) setUp() error {
 	c.log.Printf("Initialized client: %#v\n", c.client)
 	return nil
 }
+
+//Client returns the http.Client as it was initialized by the contructor
+//nil otherwise
+func (c *Client) Client() *http.Client {
+	return c.client
+}

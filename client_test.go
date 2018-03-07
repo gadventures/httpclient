@@ -11,7 +11,7 @@ import (
 func TestClient(t *testing.T) {
 	headers := make(http.Header)
 	headers.Add("X-Test", "TestClient")
-	_, err := New(
+	h2c, err := New(
 		Headers(headers),
 		KeepAliveTimeout(60*time.Second),
 		DialTimeout(3*time.Second),
@@ -40,6 +40,10 @@ func TestClient(t *testing.T) {
 		if err.Error() != test.errstr {
 			t.Errorf("expected %s but got %s", test.errstr, err.Error())
 		}
+	}
+
+	if h2c.Client() == nil {
+		t.Errorf("Expected non nil *http.Client")
 	}
 
 }

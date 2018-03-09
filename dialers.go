@@ -12,10 +12,13 @@ func (c *Client) nextConnID() int64 {
 
 func (c *Client) dialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	connID := c.nextConnID()
-	dc := (&net.Dialer{
-		Timeout:   c.dialTimeout,
-		KeepAlive: c.keepAliveTimeout,
-	}).DialContext
+	dialerThing := &net.Dialer{
+		Timeout: c.dialTimeout,
+	}
+	if !c.disableKeepAlive {
+		dialerThing.KeepAlive = c.keepAliveTimeout
+	}
+	dc := dialerThing.DialContext
 	c.log.Printf("Dialing conn %d to %s %s", connID, network, addr)
 	conn, err := dc(ctx, network, addr)
 	if err != nil {

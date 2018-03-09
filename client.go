@@ -48,6 +48,7 @@ type Client struct {
 	responseHeaderTimeout time.Duration
 	logPrefix             string
 	customRoundTripper    http.RoundTripper
+	disableKeepAlive      bool
 }
 
 // Close is cleanup function that makes client
@@ -127,6 +128,15 @@ func IdleConnTimeout(t time.Duration) func(*Client) error {
 func KeepAliveTimeout(t time.Duration) func(*Client) error {
 	return func(c *Client) error {
 		c.keepAliveTimeout = t
+		return nil
+	}
+}
+
+// DisableKeepAlive is configuration option to pass to Client
+// it disables KeepAlive for the tcp connection
+func DisableKeepAlive() func(*Client) error {
+	return func(c *Client) error {
+		c.disableKeepAlive = true
 		return nil
 	}
 }
@@ -248,6 +258,10 @@ func (c *Client) setUp() error {
 		TLSHandshakeTimeout:   c.tlsHandshakeTimeout,
 		ResponseHeaderTimeout: c.responseHeaderTimeout,
 		IdleConnTimeout:       c.idleConnTimeout,
+	}
+	//if disabled keep-alive say so
+	if c.disableKeepAlive {
+		tr.DisableKeepAlives = true
 	}
 	c.transport = tr
 	if c.customRoundTripper == nil {

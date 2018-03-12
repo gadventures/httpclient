@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"crypto/tls"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -49,6 +50,7 @@ type Client struct {
 	logPrefix             string
 	customRoundTripper    http.RoundTripper
 	disableKeepAlive      bool
+	disableH2             bool
 }
 
 // Close is cleanup function that makes client
@@ -137,6 +139,16 @@ func KeepAliveTimeout(t time.Duration) func(*Client) error {
 func DisableKeepAlive() func(*Client) error {
 	return func(c *Client) error {
 		c.disableKeepAlive = true
+		return nil
+	}
+}
+
+// DisableHTTP2 is configuration option to pass to Client
+// it disables the transparent support for HTTP/2
+// thereby forcing HTTP/1.1
+func DisableHTTP2() func(*Client) error {
+	return func(c *Client) error {
+		c.disableH2 = true
 		return nil
 	}
 }
@@ -266,6 +278,11 @@ func (c *Client) setUp() error {
 	c.transport = tr
 	if c.customRoundTripper == nil {
 		c.customRoundTripper = tr
+	}
+	//disable HTTP/2
+	if c.disableH2 {
+		nextProtoMap := make(map[string]func(string, *tls.Conn) http.RoundTripper)
+		tr.TLSNextProto = nextProtoMap
 	}
 	c.log.Printf("Initialized transport: %#v\n", tr)
 	client := &http.Client{

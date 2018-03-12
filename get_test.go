@@ -138,3 +138,45 @@ func TestGetH2(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	c.Close()
 }
+
+func TestGetDisableH2(t *testing.T) {
+	c, err := New(
+		IdleConnTimeout(10*time.Second),
+		DialTimeout(3*time.Second),
+		MaxIdleConns(4),
+		Logger(os.Stderr),
+		LogPrefix("h2client "),
+		DisableHTTP2(),
+	)
+	if err != nil {
+		t.Errorf("trouble when creating the client: %v", err)
+	}
+	ctx := context.Background()
+
+	rh := func(ctx context.Context, resp *http.Response, err error) error {
+		if strings.Contains(resp.Proto, "HTTP/2") {
+			return fmt.Errorf("Unexpected protocol %s wanted HTTP/1.1", resp.Proto)
+		}
+		if err != nil {
+			return err
+		}
+		return err
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		sleep := time.Duration(i) * time.Millisecond * 100
+		go func() {
+			time.Sleep(sleep)
+			err := c.Get(ctx, rh, "https://http2.akamai.com/demo")
+			if err != nil {
+				t.Errorf("trouble when making GET request: %v", err)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	time.Sleep(100 * time.Millisecond)
+	c.Close()
+}

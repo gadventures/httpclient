@@ -6,7 +6,6 @@ import (
 )
 
 func TestRedirect(t *testing.T) {
-
 	vreq, err := http.NewRequest("GET", "https://www.gadventures.com", nil)
 	vreq.Header.Add("foo", "bar")
 	vreq.Header.Add("moo", "baah")

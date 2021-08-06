@@ -166,6 +166,14 @@ func WithRoundTripper(rt http.RoundTripper) Option {
 	}
 }
 
+// RoundTripperFunc is like http.HandlerFunc, but for RoundTrip
+type RoundTripperFunc func(*http.Request) (*http.Response, error)
+
+// RoundTrip is the http.RoundTripper implementation
+func (r RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return r(req)
+}
+
 // set the Options provided to the New method
 func (c *client) setOptions(opts ...Option) error {
 	for _, opt := range opts {

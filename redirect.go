@@ -10,7 +10,7 @@ func defaultRedirectPolicy(req *http.Request, via []*http.Request) error {
 		return fmt.Errorf("too many redirects")
 	}
 
-	//copy headers to current redirect
+	// copy headers to current redirect
 	if len(via) > 0 {
 		for k, v := range via[0].Header {
 			req.Header[k] = v

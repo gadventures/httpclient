@@ -29,8 +29,7 @@ func TestCustomRoundTripper(t *testing.T) {
 	}
 }
 
-type TestRoundTripper struct {
-}
+type TestRoundTripper struct{}
 
 func (t *TestRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, errors.New("was here fool")

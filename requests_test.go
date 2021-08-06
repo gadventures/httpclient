@@ -103,9 +103,9 @@ func TestGetH2(t *testing.T) {
 	c, err := New(
 		DialTimeout(3*time.Second),
 		IdleConnTimeout(10*time.Second),
-		MaxIdleConns(4),
 		Logger(os.Stderr),
 		LogPrefix("h2client-test: "),
+		MaxIdleConns(4),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)
@@ -128,7 +128,7 @@ func TestGetH2(t *testing.T) {
 		sleep := time.Duration(i) * time.Millisecond * 100
 		go func() {
 			time.Sleep(sleep)
-			err := c.Get(ctx, rh, "https://nghttp2.org/httpbin/get")
+			err := c.Get(ctx, rh, "https://http2.akamai.com/demo")
 			if err != nil {
 				t.Errorf("trouble when making GET request: %v", err)
 			}
@@ -142,12 +142,12 @@ func TestGetH2(t *testing.T) {
 
 func TestGetDisableH2(t *testing.T) {
 	c, err := New(
-		IdleConnTimeout(10*time.Second),
 		DialTimeout(3*time.Second),
-		MaxIdleConns(4),
+		DisableHTTP2(),
+		IdleConnTimeout(10*time.Second),
 		Logger(os.Stderr),
 		LogPrefix("h2client-test: "),
-		DisableHTTP2(),
+		MaxIdleConns(4),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)
@@ -187,11 +187,11 @@ func TestPost(t *testing.T) {
 	headers.Add("X-Test", "TestPost")
 	headers.Add("Content-Type", "application/json")
 	c, err := New(
-		Headers(headers),
 		DialTimeout(4*time.Second),
+		Headers(headers),
 		IdleConnTimeout(10*time.Second),
-		MaxIdleConns(4),
 		Logger(os.Stderr),
+		MaxIdleConns(4),
 		RedirectPolicy(defaultRedirectPolicy),
 	)
 	if err != nil {

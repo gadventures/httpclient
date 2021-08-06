@@ -34,10 +34,11 @@ func DelHeaders(headers http.Header) RequestOption {
 // SetHeaders allows for certain headers to be replaced when making a request
 func SetHeaders(headers http.Header) RequestOption {
 	return func(req *http.Request) error {
-		for k, v := range headers {
-			var val []string
-			copy(val, v)
-			req.Header[k] = val
+		for k, vs := range headers {
+			req.Header.Del(k)
+			for i := range vs {
+				req.Header.Add(k, vs[i])
+			}
 		}
 		return nil
 	}

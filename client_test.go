@@ -32,8 +32,8 @@ func TestClient(t *testing.T) {
 		errstr string
 	}{
 		{badConfigOption(), "badd"},
-		{MaxIdleConns(-1), ErrInvalidValue.Error()},
-		{MaxIdleConnsPerHost(-2), ErrInvalidValue.Error()},
+		{MaxIdleConns(-1), ErrInvalidOptionValue.Error()},
+		{MaxIdleConnsPerHost(-2), ErrInvalidOptionValue.Error()},
 	}
 	for _, test := range tests {
 		_, err := New(test.opt)

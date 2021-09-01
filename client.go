@@ -30,8 +30,9 @@ const (
 	defaultLogPrefix = "[httpclient]: "
 )
 
-// ErrInvalidValue signifies that an invaild value was given to configartion option
-var ErrInvalidValue = errors.New("invalid value for option")
+// ErrInvalidOptionValue is returned when an invalid value was given for some
+// configuration option
+var ErrInvalidOptionValue = errors.New("invalid value for option")
 
 type Client interface {
 	// Client returns the underlying *http.Client

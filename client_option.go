@@ -98,7 +98,7 @@ func LogPrefix(p string) Option {
 func MaxIdleConns(n int) Option {
 	return func(c *client) error {
 		if n < 0 {
-			return ErrInvalidValue
+			return ErrInvalidOptionValue
 		}
 		c.maxIdleConns = n
 		return nil
@@ -111,7 +111,7 @@ func MaxIdleConns(n int) Option {
 func MaxIdleConnsPerHost(n int) Option {
 	return func(c *client) error {
 		if n < 0 {
-			return ErrInvalidValue
+			return ErrInvalidOptionValue
 		}
 		c.maxIdleConnsPerHost = n
 		return nil

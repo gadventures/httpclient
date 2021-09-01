@@ -110,7 +110,7 @@ func newDefaultClient() *client {
 	return c
 }
 
-// set *sensible* default values on the *client
+// set sensible default values on the *client
 func (c *client) setDefaults() {
 	c.dialTimeout = DefaultDialTimeout
 	c.headers = make(http.Header)
@@ -167,6 +167,6 @@ func (c *client) init() error {
 		client.CheckRedirect = c.redirectFunc
 	}
 	c.client = client
-	c.log.Printf("initialized client: %#v\n", c.client)
+	c.log.Printf("initialized *http.Client: %#v\n", c.client)
 	return nil
 }

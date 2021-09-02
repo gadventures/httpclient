@@ -1,25 +1,26 @@
 HTTPClient [![Go Report Card](https://goreportcard.com/badge/github.com/gadventures/httpclient)](https://goreportcard.com/report/github.com/gadventures/httpclient) [![Go Reference](https://pkg.go.dev/badge/github.com/gadventures/httpclient.svg)](https://pkg.go.dev/github.com/gadventures/httpclient)
-===
+==========
 
-Thin layer around standard Go http library with extensible configuration.
+Thin layer around Go's `net/http` library with extensible configuration options.
 
-A lot of the http code around making requests to our REST APIs can be extracted and shared among various projects.
+It extracts the http code making requests to our REST APIs to be shared among various projects.
 
-This includes:
+Features include:
 
-* Safe for concurrent usage
+* Safety for concurrent usage
 * Transparent support for HTTP/2
-* Header sharing between requests
+* Sharing Headers between requests
 * Custom redirect policies
 * Calling GET requests with context objects
-* Ability to set and share various timeouts without diving deep into net/http
-* Having better understanding regarding idle connection pools
+* Ability to set and share various timeouts without diving deep into `net/http` internals
+* Having a better understanding regarding idle connection pools
 
-All of the above is supported by standard library, however this thin layer allows to do so without having to manage own `http.Client` and `http.Transport` objects.
+All of the above is supported by the standard library, however this thin layer allows us to do so without having to manage our own `http.Client` and `http.Transport` objects.
 
 For more information on HTTP Timeouts [read this](https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/).
 
-Usage:
+Usage
+-----
 
 ```go
 package main
@@ -54,6 +55,4 @@ func main() {
 }
 ```
 
-Note you can use as many or as few configuration options as you want.
-
-Alpha quality code - use at your own risk.
+**WARNING:** alpha quality code; use at your own risk.

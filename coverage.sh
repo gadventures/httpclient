@@ -13,17 +13,21 @@ function usage() {
 # COVER default to func
 COVER="${1:-func}"
 
-# delete out file, ignoring if it exists
+# delete $OUT file, ignoring if it exists
 rm -f "$OUT"
 
 # run tests with coverprofile
-go test -v -race -coverprofile=$OUT
+function tests() {
+  go test -v -race -coverprofile=$OUT
+}
 
 case "$COVER" in
   func)
+    tests
     go tool cover -func=$OUT
     ;;
   html)
+    tests
     go tool cover -html=$OUT
     ;;
   *)

@@ -34,6 +34,9 @@ const (
 // configuration option
 var ErrInvalidOptionValue = errors.New("invalid value for option")
 
+// Client is the primary Interface used to make HTTP requests. It implements
+// common HTTP Verbs as methods and hides away the details used to configure
+// the underlying *http.Client object
 type Client interface {
 	// Client returns the underlying *http.Client
 	Client() *http.Client

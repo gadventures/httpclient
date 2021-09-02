@@ -1,6 +1,5 @@
-# HTTPClient
-
-[![Go Reference](https://pkg.go.dev/badge/github.com/gadventures/httpclient.svg)](https://pkg.go.dev/github.com/gadventures/httpclient)
+HTTPClient [![Go Report Card](https://goreportcard.com/badge/github.com/gadventures/httpclient)](https://goreportcard.com/report/github.com/gadventures/httpclient) [![Go Reference](https://pkg.go.dev/badge/github.com/gadventures/httpclient.svg)](https://pkg.go.dev/github.com/gadventures/httpclient)
+===
 
 Thin layer around standard Go http library with extensible configuration.
 

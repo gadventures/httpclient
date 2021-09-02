@@ -89,7 +89,7 @@ func TestGet(t *testing.T) {
 func codeTest(wg *sync.WaitGroup, t *testing.T, code int) ResponseHandler {
 	return func(ctx context.Context, resp *http.Response, err error) error {
 		if err != nil {
-			t.Errorf("GET should have suceeded: %v", err)
+			t.Errorf("GET should have succeeded: %v", err)
 		}
 		defer wg.Done()
 		if resp.StatusCode != code {

@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -17,11 +18,11 @@ func TestGet(t *testing.T) {
 	headers := make(http.Header)
 	headers.Add("X-Test", "TestGet")
 	c, err := New(
-		Headers(headers),
 		DialTimeout(4*time.Second),
+		Headers(headers),
 		IdleConnTimeout(10*time.Second),
-		MaxIdleConns(4),
 		Logger(os.Stderr),
+		MaxIdleConns(4),
 		RedirectPolicy(defaultRedirectPolicy),
 	)
 	if err != nil {
@@ -46,13 +47,13 @@ func TestGet(t *testing.T) {
 		t.Errorf("trouble when making GET request: %v", err)
 	}
 
-	//test something fake
+	// test something fake
 	err = c.Get(ctx, rh, "https://bing.bang.foo.bar.moo.moo/get")
 	if err == nil {
 		t.Error("Expected an error but got nothing")
 	}
 
-	//erroring request option
+	// erroring request option
 	err = c.Get(ctx, rh, "https://httpbin.org/get", func(req *http.Request) error {
 		return errors.New("baad")
 	})
@@ -60,9 +61,9 @@ func TestGet(t *testing.T) {
 		t.Error("Expected an error but got nothing")
 	}
 
-	//test codes and errors
+	// test codes and errors
 	var wg sync.WaitGroup
-	var tests = []struct {
+	tests := []struct {
 		url string
 		f   ResponseHandler
 	}{
@@ -100,11 +101,11 @@ func codeTest(wg *sync.WaitGroup, t *testing.T, code int) ResponseHandler {
 
 func TestGetH2(t *testing.T) {
 	c, err := New(
-		IdleConnTimeout(10*time.Second),
 		DialTimeout(3*time.Second),
-		MaxIdleConns(4),
+		IdleConnTimeout(10*time.Second),
 		Logger(os.Stderr),
-		LogPrefix("h2client "),
+		LogPrefix("h2client-test: "),
+		MaxIdleConns(4),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)
@@ -141,12 +142,12 @@ func TestGetH2(t *testing.T) {
 
 func TestGetDisableH2(t *testing.T) {
 	c, err := New(
-		IdleConnTimeout(10*time.Second),
 		DialTimeout(3*time.Second),
-		MaxIdleConns(4),
-		Logger(os.Stderr),
-		LogPrefix("h2client "),
 		DisableHTTP2(),
+		IdleConnTimeout(10*time.Second),
+		Logger(os.Stderr),
+		LogPrefix("h2client-test: "),
+		MaxIdleConns(4),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)
@@ -179,4 +180,39 @@ func TestGetDisableH2(t *testing.T) {
 	wg.Wait()
 	time.Sleep(100 * time.Millisecond)
 	c.Close()
+}
+
+func TestPost(t *testing.T) {
+	headers := make(http.Header)
+	headers.Add("X-Test", "TestPost")
+	headers.Add("Content-Type", "application/json")
+	c, err := New(
+		DialTimeout(4*time.Second),
+		Headers(headers),
+		IdleConnTimeout(10*time.Second),
+		Logger(os.Stderr),
+		MaxIdleConns(4),
+		RedirectPolicy(defaultRedirectPolicy),
+	)
+	if err != nil {
+		t.Errorf("trouble when creating the client: %v", err)
+	}
+	defer c.Close()
+	ctx := context.Background()
+
+	rh := func(ctx context.Context, resp *http.Response, err error) error {
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(os.Stderr, resp.Body)
+		return err
+	}
+
+	buf := bytes.NewBufferString(`{"foo": "bar"}`)
+	extra := make(http.Header)
+	extra.Add("X-Extra", "true")
+	err = c.Post(ctx, rh, "https://httpbin.org/post", buf, SetHeaders(extra))
+	if err != nil {
+		t.Errorf("trouble when making POST request: %v", err)
+	}
 }

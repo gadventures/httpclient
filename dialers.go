@@ -6,11 +6,11 @@ import (
 	"sync/atomic"
 )
 
-func (c *Client) nextConnID() int64 {
+func (c *client) nextConnID() int64 {
 	return atomic.AddInt64(&c.currentConnID, 1)
 }
 
-func (c *Client) dialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+func (c *client) dialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	connID := c.nextConnID()
 	dialerThing := &net.Dialer{
 		Timeout: c.dialTimeout,

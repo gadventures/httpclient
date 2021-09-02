@@ -12,28 +12,28 @@ func TestClient(t *testing.T) {
 	headers := make(http.Header)
 	headers.Add("X-Test", "TestClient")
 	h2c, err := New(
-		Headers(headers),
-		KeepAliveTimeout(60*time.Second),
 		DialTimeout(3*time.Second),
+		Headers(headers),
+		IdleConnTimeout(30*time.Second),
+		KeepAliveTimeout(60*time.Second),
+		Logger(ioutil.Discard),
 		MaxIdleConns(4),
 		MaxIdleConnsPerHost(2),
-		Logger(ioutil.Discard),
 		RedirectPolicy(defaultRedirectPolicy),
-		IdleConnTimeout(30*time.Second),
-		TLSHandshakeTimeout(10*time.Second),
 		ResponseHeaderTimeout(20*time.Second),
+		TLSHandshakeTimeout(10*time.Second),
 	)
 	if err != nil {
 		t.Errorf("trouble when creating the client: %v", err)
 	}
 
-	var tests = []struct {
-		opt    func(c *Client) error
+	tests := []struct {
+		opt    func(c *client) error
 		errstr string
 	}{
 		{badConfigOption(), "badd"},
-		{MaxIdleConns(-1), ErrInvalidValue.Error()},
-		{MaxIdleConnsPerHost(-2), ErrInvalidValue.Error()},
+		{MaxIdleConns(-1), ErrInvalidOptionValue.Error()},
+		{MaxIdleConnsPerHost(-2), ErrInvalidOptionValue.Error()},
 	}
 	for _, test := range tests {
 		_, err := New(test.opt)
@@ -45,11 +45,10 @@ func TestClient(t *testing.T) {
 	if h2c.Client() == nil {
 		t.Errorf("Expected non nil *http.Client")
 	}
-
 }
 
-func badConfigOption() func(c *Client) error {
-	return func(c *Client) error {
+func badConfigOption() func(c *client) error {
+	return func(c *client) error {
 		return errors.New("badd")
 	}
 }

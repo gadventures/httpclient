@@ -66,6 +66,7 @@ func TestSetHeaders(t *testing.T) {
 			if err != nil {
 				t.Errorf("trouble when creating the client: %v", err)
 			}
+			defer c.Close()
 
 			// startup a server with handler to check that received request headers
 			// are correct
@@ -79,6 +80,7 @@ func TestSetHeaders(t *testing.T) {
 					}
 				}
 			}))
+			defer s.Close()
 
 			// create our extra headers
 			extra := make(http.Header)
@@ -92,9 +94,6 @@ func TestSetHeaders(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error with SetHeaders: %v", err)
 			}
-			// close client & server
-			c.Close()
-			s.Close()
 		})
 	}
 }

@@ -1,6 +1,8 @@
 HTTPClient [![Go Report Card](https://goreportcard.com/badge/github.com/gadventures/httpclient)](https://goreportcard.com/report/github.com/gadventures/httpclient) [![Go Reference](https://pkg.go.dev/badge/github.com/gadventures/httpclient.svg)](https://pkg.go.dev/github.com/gadventures/httpclient)
 ==========
 
+**WARNING:** alpha quality code; use at your own risk.
+
 Thin layer around Go's `net/http` library with extensible configuration options.
 
 It extracts the http code making requests to our REST APIs to be shared among various projects.
@@ -54,5 +56,3 @@ func main() {
 	err = client.Get(ctx, responseHandler, "https://somewhere.foo.bar.com/page.html")
 }
 ```
-
-**WARNING:** alpha quality code; use at your own risk.

@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+      - id: check-yaml
+
+  - repo: local
+    hooks:
+      - id: gofumpt
+        name: gofumpt
+        language: golang
+        additional_dependencies: ["mvdan.cc/gofumpt@v0.1.0"]
+        types: [go]
+        entry: gofumpt -w
+
+  - repo: local
+    hooks:
+      - id: go-mod-tidy
+        name: go mod tidy
+        language: golang
+        types: [go]
+        pass_filenames: false
+        entry: go mod tidy

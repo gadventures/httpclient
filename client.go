@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const (
@@ -84,6 +86,7 @@ type client struct {
 	responseHeaderTimeout time.Duration
 	tlsHandshakeTimeout   time.Duration
 	transport             *http.Transport
+	withTracing           bool
 }
 
 // Client returns the *http.Client as it was initialized by the constructor
@@ -160,7 +163,11 @@ func (c *client) init() error {
 	if c.customRoundTripper == nil {
 		c.customRoundTripper = tr
 	}
+	if c.withTracing {
+		c.customRoundTripper = otelhttp.NewTransport(c.customRoundTripper)
+	}
 	c.log.Printf("initialized transport: %#v\n", tr)
+
 	// create client
 	client := &http.Client{
 		Transport: c.customRoundTripper,

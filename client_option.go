@@ -169,6 +169,15 @@ func WithRoundTripper(rt http.RoundTripper) Option {
 	}
 }
 
+// WithTracing enables instrumentation of the Client's HTTP Transport with
+// OpenTelemetry.
+func WithTracing() Option {
+	return func(c *client) error {
+		c.withTracing = true
+		return nil
+	}
+}
+
 // set the Options provided to the New method
 func (c *client) setOptions(opts ...Option) error {
 	for _, opt := range opts {
